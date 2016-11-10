@@ -1,0 +1,122 @@
+﻿@model Weather.Models.Weathers
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Weather Map</title>
+    <style>
+         /* Always set the map height explicitly to define the size of the div
+        * element that contains the map. */
+         #map {
+             height: 100%;
+         }
+         /* Optional: Makes the sample page fill the window. */
+         html, body {
+             height: 100%;
+             margin: 0;
+             padding: 0;
+         }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+
+
+      var marker;
+      var test;
+      var newLocation;
+      var latitude = @Model.coord.lat;
+      var longitude = @Model.coord.lon;
+      
+      function initMap() {
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 10,
+          center: {lat: @Model.coord.lat, lng: @Model.coord.lon}
+        });
+
+          var contentString = "<b>Location : @Model.name <br> Temperature : @Model.main.temp <br> Country : @Model.sys.country <br> Humidity : @Model.main.humidity <br> Sky : @Model.weather[0].description <br> <input type='button' name='Forecasting' onClick='forecast()' value='Forecast'> </b> <p id='frcst'> </p>";
+
+          marker = new google.maps.Marker({
+              map: map,
+              draggable: true,
+              position: {lat: @Model.coord.lat, lng: @Model.coord.lon}
+          });
+
+          var infoWindow = new google.maps.InfoWindow();
+          infoWindow.setContent(contentString);
+          infoWindow.open(map, marker);
+
+          marker.addListener('click', function(){
+              infoWindow.open(map, marker);
+          });
+          
+          
+          map.addListener('click', function(event){
+            newLocation = event.latLng;
+            latitude = newLocation.lat();
+            longitude = newLocation.lng();
+            
+
+            jQuery.ajax({
+            type: 'GET',
+            url: "http://api.openweathermap.org/data/2.5/weather?lat="+ latitude +"&lon="+ longitude + "&units=metric&appid=e42eb47b33ebbfd1aee30c3c11732152",
+
+            success : function onSuccess(data){
+                              
+                contentString = "<b>Location :"+ data.name + "<br> Temperature :"+ data.main.temp.toString()+ "<br> Country :"+ data.sys.country + "<br> Humidity :"+ data.main.humidity+" <br> Sky :"+ data.weather[0].description +"</b> <br> <input type='button' name='Forecasting' onClick='forecast()' value='Forecast'> </b> <p id='frcst'></p>";
+                infoWindow.setContent(contentString);
+                infoWindow.open(map, marker);
+            }
+            }); 
+                         
+            marker.setPosition(newLocation);
+                          
+          });
+          
+          
+      }
+
+        function forecast(){
+            
+            //document.getElementById("frcst").innerHTML = newLocation;
+            jQuery.ajax({
+                type: 'GET',
+                url:"http://api.openweathermap.org/data/2.5/forecast?lat="+ latitude +"&lon="+ longitude + "&units=metric&appid=e42eb47b33ebbfd1aee30c3c11732152",
+                success : function onForecastSuccess(data){
+                    //console.log(data);
+                    
+                    var sush = "";
+                    for(var i = 0; i < data.list.length; i++){
+                        sush += data.list[i].main.temp + "<br> "+ data.list[i].dt_txt + "<br> <hr>";
+                    }
+                    debugger
+                    $("#frcst").html(sush);
+
+
+
+                    //$.each( data, function( key, value ) {
+                    //    alert( key.country + ":key " + value );
+                    //});
+
+                 
+                    
+                    
+                    
+                }
+            }); 
+        }
+        
+       
+
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeyO957oH2NwNL2eO2U2NhRo6nU4ALJO4&callback=initMap"
+            async defer></script>
+</body>
+</html>
